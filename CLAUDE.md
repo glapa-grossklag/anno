@@ -37,7 +37,7 @@ cargo test --test alignment_test
 - Annotations can span multiple lines
 - Renders with Unicode box-drawing: `└──────┘` under annotated bytes
 - All annotation labels align vertically at column 59 (character position, not byte position)
-- Label format: `"value (type)"` e.g., `"42 (u8)"` or `"3.141590 (f32)"`
+- Label format: `"type: value"` e.g., `"u8: 42"` or `"f32: 3.141590"`
 
 **Type annotation system** (`src/types.rs`): Automatic decoding of binary data
 - `DataType` enum: U8, U16, U32, U64, I8, I16, I32, I64, F32, F64
@@ -47,7 +47,11 @@ cargo test --test alignment_test
 
 ### Color Scheme
 - Addresses (left column): Green
-- Annotated bytes and labels: Blue
+- Annotated bytes (hex): Blue
+- Annotation labels:
+  - Type name: Purple
+  - Colon: Uncolored
+  - Value: Blue
 - Regular hex bytes: No color
 
 ### Critical Implementation Details

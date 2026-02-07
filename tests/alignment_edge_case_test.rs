@@ -25,7 +25,7 @@ fn test_alignment_annotation_ending_at_position_16() {
         offset,
         2,
         format!(
-            "u16 = {}",
+            "u16: {}",
             DataType::U16
                 .decode(&data[offset..offset + 2], ByteOrder::Little)
                 .unwrap()
@@ -38,7 +38,7 @@ fn test_alignment_annotation_ending_at_position_16() {
         offset,
         4,
         format!(
-            "u32 = {}",
+            "u32: {}",
             DataType::U32
                 .decode(&data[offset..offset + 4], ByteOrder::Little)
                 .unwrap()
@@ -51,7 +51,7 @@ fn test_alignment_annotation_ending_at_position_16() {
         offset,
         4,
         format!(
-            "u32 = {}",
+            "u32: {}",
             DataType::U32
                 .decode(&data[offset..offset + 4], ByteOrder::Little)
                 .unwrap()
@@ -64,7 +64,7 @@ fn test_alignment_annotation_ending_at_position_16() {
         offset,
         4,
         format!(
-            "u32 = {}",
+            "u32: {}",
             DataType::U32
                 .decode(&data[offset..offset + 4], ByteOrder::Little)
                 .unwrap()
@@ -77,7 +77,7 @@ fn test_alignment_annotation_ending_at_position_16() {
         offset,
         2,
         format!(
-            "u16 = {}",
+            "u16: {}",
             DataType::U16
                 .decode(&data[offset..offset + 2], ByteOrder::Little)
                 .unwrap()
@@ -96,11 +96,11 @@ fn test_alignment_annotation_ending_at_position_16() {
     let mut label_positions = Vec::new();
 
     for (i, line) in lines.iter().enumerate() {
-        if line.contains("u16 = ") || line.contains("u32 = ") {
+        if line.contains("u16: ") || line.contains("u32: ") {
             // Find the position where the label starts
-            let label_start = if let Some(pos) = line.find("u16 = ") {
+            let label_start = if let Some(pos) = line.find("u16: ") {
                 pos
-            } else if let Some(pos) = line.find("u32 = ") {
+            } else if let Some(pos) = line.find("u32: ") {
                 pos
             } else {
                 continue;

@@ -17,26 +17,26 @@ fn test_u8_annotation() {
     hexdump.add_annotation(Annotation::new(
         0,
         1,
-        format!("u8 = {}", DataType::U8.decode(&data[0..1], ByteOrder::Little).unwrap()),
+        format!("u8: {}", DataType::U8.decode(&data[0..1], ByteOrder::Little).unwrap()),
     ));
     hexdump.add_annotation(Annotation::new(
         1,
         1,
-        format!("u8 = {}", DataType::U8.decode(&data[1..2], ByteOrder::Little).unwrap()),
+        format!("u8: {}", DataType::U8.decode(&data[1..2], ByteOrder::Little).unwrap()),
     ));
     hexdump.add_annotation(Annotation::new(
         2,
         1,
-        format!("u8 = {}", DataType::U8.decode(&data[2..3], ByteOrder::Little).unwrap()),
+        format!("u8: {}", DataType::U8.decode(&data[2..3], ByteOrder::Little).unwrap()),
     ));
 
     let mut output = Vec::new();
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("u8 = 42"));
-    assert!(output_str.contains("u8 = 100"));
-    assert!(output_str.contains("u8 = 255"));
+    assert!(output_str.contains("u8: 42"));
+    assert!(output_str.contains("u8: 100"));
+    assert!(output_str.contains("u8: 255"));
 }
 
 #[test]
@@ -48,7 +48,7 @@ fn test_u16_little_endian() {
         0,
         2,
         format!(
-            "u16 = {}",
+            "u16: {}",
             DataType::U16.decode(&data, ByteOrder::Little).unwrap()
         ),
     ));
@@ -57,7 +57,7 @@ fn test_u16_little_endian() {
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("u16 = 4660"));
+    assert!(output_str.contains("u16: 4660"));
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn test_u16_big_endian() {
         0,
         2,
         format!(
-            "u16 = {}",
+            "u16: {}",
             DataType::U16.decode(&data, ByteOrder::Big).unwrap()
         ),
     ));
@@ -78,7 +78,7 @@ fn test_u16_big_endian() {
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("u16 = 4660"));
+    assert!(output_str.contains("u16: 4660"));
 }
 
 #[test]
@@ -90,7 +90,7 @@ fn test_u32_little_endian() {
         0,
         4,
         format!(
-            "u32 = {}",
+            "u32: {}",
             DataType::U32.decode(&data, ByteOrder::Little).unwrap()
         ),
     ));
@@ -99,7 +99,7 @@ fn test_u32_little_endian() {
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("u32 = 305419896"));
+    assert!(output_str.contains("u32: 305419896"));
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn test_u32_big_endian() {
         0,
         4,
         format!(
-            "u32 = {}",
+            "u32: {}",
             DataType::U32.decode(&data, ByteOrder::Big).unwrap()
         ),
     ));
@@ -120,7 +120,7 @@ fn test_u32_big_endian() {
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("u32 = 305419896"));
+    assert!(output_str.contains("u32: 305419896"));
 }
 
 #[test]
@@ -131,14 +131,14 @@ fn test_i8_negative() {
     hexdump.add_annotation(Annotation::new(
         0,
         1,
-        format!("i8 = {}", DataType::I8.decode(&data, ByteOrder::Little).unwrap()),
+        format!("i8: {}", DataType::I8.decode(&data, ByteOrder::Little).unwrap()),
     ));
 
     let mut output = Vec::new();
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("i8 = -1"));
+    assert!(output_str.contains("i8: -1"));
 }
 
 #[test]
@@ -150,7 +150,7 @@ fn test_i16_negative() {
         0,
         2,
         format!(
-            "i16 = {}",
+            "i16: {}",
             DataType::I16
                 .decode(&data, ByteOrder::Little)
                 .unwrap()
@@ -161,7 +161,7 @@ fn test_i16_negative() {
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("i16 = -1"));
+    assert!(output_str.contains("i16: -1"));
 }
 
 #[test]
@@ -174,7 +174,7 @@ fn test_mixed_types_sequential() {
     hexdump.add_annotation(Annotation::new(
         0,
         1,
-        format!("u8 = {}", DataType::U8.decode(&data[0..1], ByteOrder::Little).unwrap()),
+        format!("u8: {}", DataType::U8.decode(&data[0..1], ByteOrder::Little).unwrap()),
     ));
 
     // u16 at offset 1
@@ -182,7 +182,7 @@ fn test_mixed_types_sequential() {
         1,
         2,
         format!(
-            "u16 = {}",
+            "u16: {}",
             DataType::U16.decode(&data[1..3], ByteOrder::Little).unwrap()
         ),
     ));
@@ -192,7 +192,7 @@ fn test_mixed_types_sequential() {
         3,
         4,
         format!(
-            "u32 = {}",
+            "u32: {}",
             DataType::U32.decode(&data[3..7], ByteOrder::Little).unwrap()
         ),
     ));
@@ -203,9 +203,9 @@ fn test_mixed_types_sequential() {
     let output_str = String::from_utf8(output).unwrap();
     println!("Output:\n{}", output_str);
 
-    assert!(output_str.contains("u8 = 42"));
-    assert!(output_str.contains("u16 = 4660")); // 0x1234 little-endian
-    assert!(output_str.contains("u32 = 305419896")); // 0x12345678 little-endian
+    assert!(output_str.contains("u8: 42"));
+    assert!(output_str.contains("u16: 4660")); // 0x1234 little-endian
+    assert!(output_str.contains("u32: 305419896")); // 0x12345678 little-endian
 }
 
 #[test]
@@ -217,7 +217,7 @@ fn test_u64_little_endian() {
         0,
         8,
         format!(
-            "u64 = {}",
+            "u64: {}",
             DataType::U64.decode(&data, ByteOrder::Little).unwrap()
         ),
     ));
@@ -227,7 +227,7 @@ fn test_u64_little_endian() {
 
     let output_str = String::from_utf8(output).unwrap();
     // Little-endian: 0x0807060504030201
-    assert!(output_str.contains("u64 = 578437695752307201"));
+    assert!(output_str.contains("u64: 578437695752307201"));
 }
 
 #[test]
@@ -240,7 +240,7 @@ fn test_f32_decode() {
         0,
         4,
         format!(
-            "f32 = {}",
+            "f32: {}",
             DataType::F32.decode(&data, ByteOrder::Little).unwrap()
         ),
     ));
@@ -249,7 +249,7 @@ fn test_f32_decode() {
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("f32 = 3.14159"));
+    assert!(output_str.contains("f32: 3.14159"));
 }
 
 #[test]
@@ -268,7 +268,7 @@ fn test_type_spanning_line_boundary() {
         14,
         4,
         format!(
-            "u32 = {}",
+            "u32: {}",
             DataType::U32
                 .decode(&data[14..18], ByteOrder::Little)
                 .unwrap()
@@ -282,7 +282,7 @@ fn test_type_spanning_line_boundary() {
     println!("Output:\n{}", output_str);
 
     // Should have continuation across line boundary
-    assert!(output_str.contains("u32 = 305419896"));
+    assert!(output_str.contains("u32: 305419896"));
 
     let lines: Vec<&str> = output_str.lines().collect();
     // First line should have start of annotation (no closing)
@@ -302,7 +302,7 @@ fn test_types_at_gap_position() {
         7,
         2,
         format!(
-            "u16 = {}",
+            "u16: {}",
             DataType::U16.decode(&data[7..9], ByteOrder::Little).unwrap()
         ),
     ));
@@ -311,7 +311,7 @@ fn test_types_at_gap_position() {
     hexdump.dump(&mut Cursor::new(&data), &mut output).unwrap();
 
     let output_str = String::from_utf8(output).unwrap();
-    assert!(output_str.contains("u16 = 4660"));
+    assert!(output_str.contains("u16: 4660"));
 }
 
 #[test]
@@ -350,7 +350,7 @@ fn test_all_integer_types() {
         hexdump.add_annotation(Annotation::new(
             offset,
             size,
-            format!("{} = {}", data_type.name(), value),
+            format!("{}: {}", data_type.name(), value),
         ));
         offset += size;
     }
@@ -361,11 +361,11 @@ fn test_all_integer_types() {
     let output_str = String::from_utf8(output).unwrap();
     println!("Output:\n{}", output_str);
 
-    assert!(output_str.contains("u8 = 42"));
-    assert!(output_str.contains("i8 = -1"));
-    assert!(output_str.contains("u16 = 4660"));
-    assert!(output_str.contains("i16 = -1"));
-    assert!(output_str.contains("u32 = 305419896"));
-    assert!(output_str.contains("i32 = -1"));
-    assert!(output_str.contains("i64 = -1"));
+    assert!(output_str.contains("u8: 42"));
+    assert!(output_str.contains("i8: -1"));
+    assert!(output_str.contains("u16: 4660"));
+    assert!(output_str.contains("i16: -1"));
+    assert!(output_str.contains("u32: 305419896"));
+    assert!(output_str.contains("i32: -1"));
+    assert!(output_str.contains("i64: -1"));
 }

@@ -43,14 +43,14 @@ printf '\x00\x01aaaaaaaaaaaaaaaa' | anno u16 u32 u32 u32 u16
 
 Output:
 ```
-00000000  00 01 61 61 61 61  61 61 61 61 61 61  61 61 61 61
-          └─────┘                                           256 (u16)
-                └───────────────┘                           1633771873 (u32)
-                                └───────────────┘           1633771873 (u32)
-                                                └─────────
-          ────────┘                                         1633771873 (u32)
-                  └─────┘                                   24929 (u16)
-00000010
+00000000  00 01 61 61 61 61 61 61  61 61 61 61 61 61 61 61
+          └─────┘                                           u16: 256
+                └───────────┘                               u32: 1633771873
+                            └────────────┘                  u32: 1633771873
+                                         └───────────┘      u32: 1633771873
+                                                     └────┘ u16: 24929
+00000010  61 61
+00000012
 ```
 
 ### Byte order
@@ -105,7 +105,11 @@ python3 -c "import struct; print(struct.pack('ff', 3.14159, 2.71828), end='')" |
 ## Color Scheme
 
 - **Addresses** (left column): Green
-- **Annotated bytes and labels**: Blue
+- **Annotated bytes** (hex): Blue
+- **Annotation labels**:
+  - Type name (e.g., `u16`, `f32`): Purple
+  - Colon: Uncolored
+  - Value (e.g., `256`, `3.14`): Blue
 - **Regular bytes**: Default terminal color
 
 Colors are automatically disabled when:

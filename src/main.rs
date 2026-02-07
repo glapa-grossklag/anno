@@ -54,6 +54,7 @@ pub struct Hexdump {
 // ANSI color codes
 const GREEN: &str = "\x1b[32m";
 const BLUE: &str = "\x1b[34m";
+const PURPLE: &str = "\x1b[35m";
 const RESET: &str = "\x1b[0m";
 
 impl Hexdump {
@@ -78,6 +79,22 @@ impl Hexdump {
             format!("{}{}{}", BLUE, text, RESET)
         } else {
             text.to_string()
+        }
+    }
+
+    fn color_label(&self, label: &str) -> String {
+        if !self.use_color {
+            return label.to_string();
+        }
+
+        // Format is "type: value" - color type purple, colon uncolored, value blue
+        if let Some(colon_pos) = label.find(": ") {
+            let type_part = &label[..colon_pos];
+            let value_part = &label[colon_pos + 2..];
+            format!("{}{}{}: {}{}{}", PURPLE, type_part, RESET, BLUE, value_part, RESET)
+        } else {
+            // Fallback: just color it blue if format doesn't match
+            format!("{}{}{}", BLUE, label, RESET)
         }
     }
 
@@ -290,7 +307,7 @@ impl Hexdump {
 
         // Only show label on the first line of the annotation
         if ann_start >= line_offset && ann_start < line_end {
-            writeln!(writer, " {}", self.color_annotation(&annotation.label))?;
+            writeln!(writer, " {}", self.color_label(&annotation.label))?;
         } else {
             writeln!(writer)?;
         }
@@ -343,8 +360,8 @@ fn build_annotations_from_types(
         // Decode the value
         let value = data_type.decode(&data[offset..offset + size], byte_order)?;
 
-        // Create label: "value (type)"
-        let label = format!("{} ({})", value, data_type.name());
+        // Create label: "type: value"
+        let label = format!("{}: {}", data_type.name(), value);
 
         annotations.push(Annotation::new(offset, size, label));
         offset += size;

@@ -1,3 +1,5 @@
+mod types;
+
 use anyhow::Result;
 use argh::FromArgs;
 use std::env;
@@ -5,12 +7,22 @@ use std::fs::File;
 use std::io::{self, IsTerminal, Read, Write};
 use std::path::PathBuf;
 
+pub use types::{ByteOrder, DataType};
+
 #[derive(FromArgs)]
-/// A simple hexdump utility
+/// A simple hexdump utility with type annotations
 struct Args {
-    /// file to read (reads from stdin if not provided)
+    /// data types to annotate (e.g., u8 u16 u32)
     #[argh(positional)]
+    types: Vec<String>,
+
+    /// file to read (reads from stdin if not provided)
+    #[argh(option, short = 'f')]
     file: Option<PathBuf>,
+
+    /// byte order for multi-byte types: little (default) or big
+    #[argh(option, default = "String::from(\"little\")")]
+    byte_order: String,
 }
 
 /// Represents an annotation for a range of bytes
@@ -214,8 +226,12 @@ impl Hexdump {
                 if continues_to_next {
                     // Continues to next line, no closing corner
                     underline.push_str("───");
+                } else if end_in_line == 16 {
+                    // Ends at position 16 - closing corner will be added after loop
+                    // Only add 2 chars here instead of 3
+                    underline.push_str("──");
                 } else {
-                    // Ends on next position
+                    // Ends on next position (inside this line)
                     underline.push_str("───");
                 }
             } else if in_annotation {
@@ -241,19 +257,30 @@ impl Hexdump {
             just_started = false;
         }
 
-        // Handle closing corner if annotation ends exactly at end of line (position 16)
-        if end_in_line == 16 && !continues_to_next {
-            underline.push('┘');
-        }
+        // Check if we need to add closing corner at position 16
+        let has_closing_at_16 = end_in_line == 16 && !continues_to_next;
 
         // Count display width (not bytes)
         let display_width: usize = underline.chars().count();
 
-        // Pad to align labels at column 58
+        // Pad to align labels at column 58 (or 57 if we have closing corner at 16)
         const LABEL_COLUMN: usize = 58;
+        let target_column = if has_closing_at_16 {
+            LABEL_COLUMN - 1 // Aim for 57 so that after adding ┘ we're at 58
+        } else {
+            LABEL_COLUMN
+        };
+
         write!(writer, "{}", underline)?;
-        let padding = if display_width < LABEL_COLUMN {
-            LABEL_COLUMN - display_width
+
+        // Add closing corner if needed (at position 16)
+        if has_closing_at_16 {
+            write!(writer, "┘")?;
+        }
+
+        // Calculate padding
+        let padding = if display_width < target_column {
+            target_column - display_width
         } else {
             0
         };
@@ -289,25 +316,73 @@ fn should_use_color() -> bool {
     io::stdout().is_terminal()
 }
 
+/// Build annotations from type specifications
+fn build_annotations_from_types(
+    type_specs: &[String],
+    byte_order: ByteOrder,
+    data: &[u8],
+) -> Result<Vec<Annotation>> {
+    let mut annotations = Vec::new();
+    let mut offset = 0;
+
+    for type_spec in type_specs {
+        let data_type = DataType::from_str(type_spec)?;
+        let size = data_type.size();
+
+        // Check if we have enough data
+        if offset + size > data.len() {
+            return Err(anyhow::anyhow!(
+                "Not enough data: type {} at offset {} needs {} bytes, but only {} bytes available",
+                data_type.name(),
+                offset,
+                size,
+                data.len() - offset
+            ));
+        }
+
+        // Decode the value
+        let value = data_type.decode(&data[offset..offset + size], byte_order)?;
+
+        // Create label: "value (type)"
+        let label = format!("{} ({})", value, data_type.name());
+
+        annotations.push(Annotation::new(offset, size, label));
+        offset += size;
+    }
+
+    Ok(annotations)
+}
+
 fn main() -> Result<()> {
     let args: Args = argh::from_env();
 
+    // Read all data into memory (needed for type-based annotation)
+    let mut data = Vec::new();
     let mut reader: Box<dyn Read> = match args.file {
         Some(path) => Box::new(File::open(path)?),
         None => Box::new(io::stdin()),
     };
+    reader.read_to_end(&mut data)?;
 
     let mut hexdump = Hexdump::new();
 
-    // Example annotations
-    hexdump.add_annotation(Annotation::new(0, 5, "Hello"));
-    hexdump.add_annotation(Annotation::new(5, 2, "Comma+Space"));
-    hexdump.add_annotation(Annotation::new(7, 6, "World!"));
-    hexdump.add_annotation(Annotation::new(14, 4, "This"));
+    // If types are specified, build annotations from them
+    if !args.types.is_empty() {
+        let byte_order = ByteOrder::from_str(&args.byte_order)?;
+        let annotations = build_annotations_from_types(&args.types, byte_order, &data)?;
+        for annotation in annotations {
+            hexdump.add_annotation(annotation);
+        }
+    }
+    // If no types specified, just show plain hexdump without annotations
 
     let stdout = io::stdout();
     let mut handle = stdout.lock();
-    hexdump.dump(&mut reader, &mut handle)?;
+
+    // Dump from the in-memory data
+    use std::io::Cursor;
+    let mut cursor = Cursor::new(&data);
+    hexdump.dump(&mut cursor, &mut handle)?;
 
     Ok(())
 }

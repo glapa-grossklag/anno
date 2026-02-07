@@ -243,12 +243,8 @@ impl Hexdump {
                 if continues_to_next {
                     // Continues to next line, no closing corner
                     underline.push_str("───");
-                } else if end_in_line == 16 {
-                    // Ends at position 16 - closing corner will be added after loop
-                    // Only add 2 chars here instead of 3
-                    underline.push_str("──");
                 } else {
-                    // Ends on next position (inside this line)
+                    // Ends on this line - add full width
                     underline.push_str("───");
                 }
             } else if in_annotation {
@@ -277,27 +273,31 @@ impl Hexdump {
         // Check if we need to add closing corner at position 16
         let has_closing_at_16 = end_in_line == 16 && !continues_to_next;
 
+        // For position 16 annotations, we need to add the "┘" that would normally be added
+        // at position end_in_line in the loop (but the loop only goes 0-15)
+        if has_closing_at_16 {
+            underline.push('┘');
+        }
+
         // Count display width (not bytes)
         let display_width: usize = underline.chars().count();
 
-        // Pad to align labels at column 58 (or 57 if we have closing corner at 16)
-        const LABEL_COLUMN: usize = 58;
-        let target_column = if has_closing_at_16 {
-            LABEL_COLUMN - 1 // Aim for 57 so that after adding ┘ we're at 58
-        } else {
-            LABEL_COLUMN
-        };
-
         write!(writer, "{}", underline)?;
 
-        // Add closing corner if needed (at position 16)
-        if has_closing_at_16 {
-            write!(writer, "┘")?;
-        }
-
-        // Calculate padding
-        let padding = if display_width < target_column {
-            target_column - display_width
+        // Pad to align labels at column 59
+        // Labels start after the underline + padding + space (in writeln)
+        const LABEL_START_COLUMN: usize = 59;
+        let current_pos = display_width;
+        // We want the space in writeln to put us at LABEL_START_COLUMN
+        // So we need to be at LABEL_START_COLUMN - 1 before the space
+        // But for position 16, we need one extra space to match the "┘ " format
+        let target_pos = if has_closing_at_16 {
+            LABEL_START_COLUMN  // Need to be at 59 before writeln adds its space
+        } else {
+            LABEL_START_COLUMN - 1  // Need to be at 58 before writeln adds its space
+        };
+        let padding = if current_pos < target_pos {
+            target_pos - current_pos
         } else {
             0
         };

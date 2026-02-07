@@ -41,6 +41,32 @@ Specify data types to automatically decode and annotate:
 printf '\x00\x01aaaaaaaaaaaaaaaa' | anno u16 u32 u32 u32 u16
 ```
 
+### Field names
+
+Use custom field names instead of type names for better clarity:
+
+```bash
+# Use field names for struct-like data
+printf '\x12\x34aaaaaaaaaa\xFF' | anno u16:packet_id u32:timestamp u32:sequence u16:flags u8:version
+```
+
+Output shows field names instead of types:
+```
+00000000  12 34 61 61 61 61 61 61  61 61 61 61 ff
+         └─────┘                                           packet_id: 13330
+               └───────────┘                               timestamp: 1633771873
+                           └────────────┘                  sequence: 1633771873
+                                        └─────┘            flags: 24929
+                                              └──┘         version: 255
+```
+
+Mix field names and plain types as needed:
+
+```bash
+# Some fields named, others use type names
+anno u16:apid u32 u32:data u8:x
+```
+
 Output:
 ```
 00000000  00 01 61 61 61 61 61 61  61 61 61 61 61 61 61 61
@@ -124,6 +150,7 @@ Usage: anno [<types...>] [-f <file>] [--byte-order <byte-order>]
 
 Positional Arguments:
   types             data types to annotate (e.g., u8 u16 u32)
+                    optionally with field names (e.g., u16:apid u32:count)
 
 Options:
   -f, --file        file to read (reads from stdin if not provided)

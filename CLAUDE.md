@@ -39,11 +39,15 @@ cargo test --test alignment_test
 - All annotation labels align vertically at column 59 (character position, not byte position)
 - Label format: `"type: value"` e.g., `"u8: 42"` or `"f32: 3.141590"`
 
-**Type annotation system** (`src/types.rs`): Automatic decoding of binary data
+**Type annotation system** (`src/types.rs` and `src/main.rs`): Automatic decoding of binary data
 - `DataType` enum: U8, U16, U32, U64, I8, I16, I32, I64, F32, F64
 - `ByteOrder` enum: Little (default) or Big
+- `TypeSpec` struct: Parses type specifications with optional field names (e.g., `u16:apid`)
 - `build_annotations_from_types()`: Sequential type decoding from command-line args
-- Example: `anno u8 u32 f64 --byte-order little -f data.bin`
+- Field names: Use `type:fieldname` syntax to display custom names instead of type names
+- Examples:
+  - `anno u8 u32 f64 --byte-order little -f data.bin`
+  - `anno u16:packet_id u32:timestamp u8:version`
 
 ### Color Scheme
 - Addresses (left column): Green
@@ -81,13 +85,14 @@ Binary size target: ~340KB
 
 ## Test Coverage
 
-106 tests passing across 6 test files:
+125 tests passing across 7 test files:
 - `src/types.rs`: 11 unit tests for type parsing, sizes, and decoding
 - `tests/alignment_test.rs`: 12 tests verifying vertical label alignment
 - `tests/alignment_edge_case_test.rs`: 1 test for position 16 edge case (u16 u32 u32 u32 u16 pattern)
 - `tests/comprehensive_test.rs`: 22 tests covering edge cases, boundaries, multi-line, overlapping
 - `tests/continuation_test.rs`: 14 tests for multi-line annotation continuation
 - `tests/type_annotation_test.rs`: 24 tests for all data types with both byte orders
+- `tests/field_name_test.rs`: 8 tests for field name parsing, mixed types, alignment, error handling
 - `src/main.rs`: 11 module-level tests
 
 ## Usage Examples
@@ -98,6 +103,12 @@ echo "Hello" | ./target/release/anno
 
 # Decode types: u16 followed by four u32s and another u16
 printf '\x00\x01aaaaaaaaaaaaaaaa' | ./target/release/anno u16 u32 u32 u32 u16
+
+# Use field names for struct-like data
+printf '\x12\x34aaaaaaaaaa\xFF' | ./target/release/anno u16:packet_id u32:timestamp u32:sequence u16:flags u8:version
+
+# Mix field names and plain types
+./target/release/anno u16:apid u32 u32:data u8:x -f data.bin
 
 # Big-endian decoding
 ./target/release/anno u32 u64 --byte-order big -f data.bin

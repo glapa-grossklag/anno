@@ -333,8 +333,47 @@ fn should_use_color() -> bool {
     io::stdout().is_terminal()
 }
 
+/// Represents a type specification with optional field name
+struct TypeSpec {
+    data_type: DataType,
+    field_name: Option<String>,
+}
+
+impl TypeSpec {
+    /// Parse a type specification string (e.g., "u16" or "u16:apid")
+    fn from_str(s: &str) -> Result<Self> {
+        if let Some(colon_pos) = s.find(':') {
+            // Format: "type:fieldname"
+            let type_part = &s[..colon_pos];
+            let field_part = &s[colon_pos + 1..];
+
+            if field_part.is_empty() {
+                return Err(anyhow::anyhow!("Field name cannot be empty in '{}'", s));
+            }
+
+            let data_type = DataType::from_str(type_part)?;
+            Ok(TypeSpec {
+                data_type,
+                field_name: Some(field_part.to_string()),
+            })
+        } else {
+            // Format: "type"
+            let data_type = DataType::from_str(s)?;
+            Ok(TypeSpec {
+                data_type,
+                field_name: None,
+            })
+        }
+    }
+
+    /// Get the display name (field name if provided, otherwise type name)
+    fn display_name(&self) -> &str {
+        self.field_name.as_deref().unwrap_or_else(|| self.data_type.name())
+    }
+}
+
 /// Build annotations from type specifications
-fn build_annotations_from_types(
+pub fn build_annotations_from_types(
     type_specs: &[String],
     byte_order: ByteOrder,
     data: &[u8],
@@ -342,15 +381,15 @@ fn build_annotations_from_types(
     let mut annotations = Vec::new();
     let mut offset = 0;
 
-    for type_spec in type_specs {
-        let data_type = DataType::from_str(type_spec)?;
-        let size = data_type.size();
+    for type_spec_str in type_specs {
+        let type_spec = TypeSpec::from_str(type_spec_str)?;
+        let size = type_spec.data_type.size();
 
         // Check if we have enough data
         if offset + size > data.len() {
             return Err(anyhow::anyhow!(
                 "Not enough data: type {} at offset {} needs {} bytes, but only {} bytes available",
-                data_type.name(),
+                type_spec.data_type.name(),
                 offset,
                 size,
                 data.len() - offset
@@ -358,10 +397,10 @@ fn build_annotations_from_types(
         }
 
         // Decode the value
-        let value = data_type.decode(&data[offset..offset + size], byte_order)?;
+        let value = type_spec.data_type.decode(&data[offset..offset + size], byte_order)?;
 
-        // Create label: "type: value"
-        let label = format!("{}: {}", data_type.name(), value);
+        // Create label: "name: value" (using field name if provided, otherwise type name)
+        let label = format!("{}: {}", type_spec.display_name(), value);
 
         annotations.push(Annotation::new(offset, size, label));
         offset += size;

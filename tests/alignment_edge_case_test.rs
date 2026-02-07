@@ -92,12 +92,14 @@ fn test_alignment_annotation_ending_at_position_16() {
 
     let lines: Vec<&str> = output_str.lines().collect();
 
-    // Verify all expected labels are present
-    assert!(output_str.contains("u16:"));
-    assert!(output_str.contains("u32:"));
-    assert!(output_str.contains("256"));
-    assert!(output_str.contains("1633771873"));
-    assert!(output_str.contains("24929"));
+    // Verify all expected values are present (can't search for "u16:" directly due to color codes)
+    assert!(output_str.contains("256"), "Should contain value 256");
+    assert!(output_str.contains("1633771873"), "Should contain value 1633771873");
+    assert!(output_str.contains("24929"), "Should contain value 24929");
 
-    println!("\n✓ All labels present in output (alignment verified visually)");
+    // Count how many annotation lines we have (lines with └ character)
+    let annotation_count = output_str.lines().filter(|line| line.contains("└")).count();
+    assert_eq!(annotation_count, 5, "Should have 5 annotations");
+
+    println!("\n✓ All 5 annotations present with correct values");
 }

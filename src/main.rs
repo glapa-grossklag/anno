@@ -27,15 +27,43 @@ struct Args {
     byte_order: String,
 }
 
-/// Represents a type specification with optional field name
-struct TypeSpec {
-    data_type: DataType,
-    field_name: Option<String>,
+/// Represents a type specification or skip directive
+enum TypeSpec {
+    /// A data type with optional field name
+    Type {
+        data_type: DataType,
+        field_name: Option<String>,
+    },
+    /// Skip directive - number of bytes to skip
+    Skip { bytes: usize },
 }
 
 impl TypeSpec {
-    /// Parse a type specification string (e.g., "u16" or "u16:apid")
+    /// Parse a type specification string (e.g., "u16", "u16:apid", or ".32")
     fn from_str(s: &str) -> Result<Self> {
+        // Check for skip directive (.8, .16, .32, etc.)
+        if s.starts_with('.') {
+            let bits_str = &s[1..];
+            let bits: usize = bits_str.parse().map_err(|_| {
+                anyhow::anyhow!("Invalid skip syntax '{}': expected .N where N is number of bits", s)
+            })?;
+
+            if bits == 0 {
+                return Err(anyhow::anyhow!("Skip size cannot be 0"));
+            }
+
+            if bits % 8 != 0 {
+                return Err(anyhow::anyhow!(
+                    "Skip size must be a multiple of 8 bits (got {} bits)",
+                    bits
+                ));
+            }
+
+            let bytes = bits / 8;
+            return Ok(TypeSpec::Skip { bytes });
+        }
+
+        // Otherwise parse as type with optional field name
         if let Some(colon_pos) = s.find(':') {
             // Format: "type:fieldname"
             let type_part = &s[..colon_pos];
@@ -46,24 +74,20 @@ impl TypeSpec {
             }
 
             let data_type = DataType::from_str(type_part)?;
-            Ok(TypeSpec {
+            Ok(TypeSpec::Type {
                 data_type,
                 field_name: Some(field_part.to_string()),
             })
         } else {
             // Format: "type"
             let data_type = DataType::from_str(s)?;
-            Ok(TypeSpec {
+            Ok(TypeSpec::Type {
                 data_type,
                 field_name: None,
             })
         }
     }
 
-    /// Get the display name (field name if provided, otherwise type name)
-    fn display_name(&self) -> &str {
-        self.field_name.as_deref().unwrap_or_else(|| self.data_type.name())
-    }
 }
 
 /// Build annotations from type specifications
@@ -77,27 +101,46 @@ pub fn build_annotations_from_types(
 
     for type_spec_str in type_specs {
         let type_spec = TypeSpec::from_str(type_spec_str)?;
-        let size = type_spec.data_type.size();
 
-        // Check if we have enough data
-        if offset + size > data.len() {
-            return Err(anyhow::anyhow!(
-                "Not enough data: type {} at offset {} needs {} bytes, but only {} bytes available",
-                type_spec.data_type.name(),
-                offset,
-                size,
-                data.len() - offset
-            ));
+        match type_spec {
+            TypeSpec::Skip { bytes } => {
+                // Skip directive - just advance offset
+                if offset + bytes > data.len() {
+                    return Err(anyhow::anyhow!(
+                        "Not enough data: skip {} bytes at offset {} exceeds data length {}",
+                        bytes,
+                        offset,
+                        data.len()
+                    ));
+                }
+                offset += bytes;
+            }
+            TypeSpec::Type { data_type, field_name } => {
+                let size = data_type.size();
+
+                // Check if we have enough data
+                if offset + size > data.len() {
+                    let display_name = field_name.as_deref().unwrap_or_else(|| data_type.name());
+                    return Err(anyhow::anyhow!(
+                        "Not enough data: type {} at offset {} needs {} bytes, but only {} bytes available",
+                        display_name,
+                        offset,
+                        size,
+                        data.len() - offset
+                    ));
+                }
+
+                // Decode the value
+                let value = data_type.decode(&data[offset..offset + size], byte_order)?;
+
+                // Create label: "name: value" (using field name if provided, otherwise type name)
+                let display_name = field_name.as_deref().unwrap_or_else(|| data_type.name());
+                let label = format!("{}: {}", display_name, value);
+
+                annotations.push(Annotation::new(offset, size, label));
+                offset += size;
+            }
         }
-
-        // Decode the value
-        let value = type_spec.data_type.decode(&data[offset..offset + size], byte_order)?;
-
-        // Create label: "name: value" (using field name if provided, otherwise type name)
-        let label = format!("{}: {}", type_spec.display_name(), value);
-
-        annotations.push(Annotation::new(offset, size, label));
-        offset += size;
     }
 
     Ok(annotations)

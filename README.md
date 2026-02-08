@@ -55,6 +55,24 @@ Output:
 00000007
 ```
 
+### Skip bytes
+
+Use `.N` syntax to skip over bytes (where N is number of bits):
+
+```bash
+printf '\x12\x34\xAA\xBB\xCC\xDD\x56\x78' | anno u16:magic .32 u16:data
+```
+
+Output:
+```
+00000000  12 34 aa bb cc dd 56 78
+         └─────┘                                           magic: 13330
+                           └──────┘                        data: 30806
+00000008
+```
+
+Common skip sizes: `.8` (1 byte), `.16` (2 bytes), `.32` (4 bytes), `.64` (8 bytes)
+
 ### Network packet
 
 ```bash

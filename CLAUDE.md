@@ -29,7 +29,9 @@ The codebase is organized into focused modules:
 
 **`src/main.rs`** (138 lines): CLI parsing and entry point
 - `Args` struct: Command-line argument parsing with argh
-- `TypeSpec` struct: Parses type specifications with optional field names (e.g., `u16:apid`)
+- `TypeSpec` enum: Parses type specifications, field names, or skip directives
+  - `Type { data_type, field_name }`: Data type with optional field name (e.g., `u16:apid`)
+  - `Skip { bytes }`: Skip directive (e.g., `.32` to skip 4 bytes)
 - `build_annotations_from_types()`: Sequential type decoding from command-line args
 - `main()`: Orchestrates reading input, building annotations, and rendering output
 
@@ -89,7 +91,7 @@ Current binary size: 393KB (includes type system, field names, and full feature 
 
 ## Test Coverage
 
-125 tests passing across 7 test files:
+141 tests passing across 8 test files:
 - `src/types.rs`: 11 unit tests for type parsing, sizes, and decoding
 - `tests/alignment_test.rs`: 12 tests verifying vertical label alignment
 - `tests/alignment_edge_case_test.rs`: 1 test for position 16 edge case (u16 u32 u32 u32 u16 pattern)
@@ -97,6 +99,7 @@ Current binary size: 393KB (includes type system, field names, and full feature 
 - `tests/continuation_test.rs`: 14 tests for multi-line annotation continuation
 - `tests/type_annotation_test.rs`: 24 tests for all data types with both byte orders
 - `tests/field_name_test.rs`: 8 tests for field name parsing, mixed types, alignment, error handling
+- `tests/skip_test.rs`: 16 tests for skip directives (.8, .16, .32, etc.), error cases, complex patterns
 - `src/main.rs`: 11 module-level tests
 
 ## Usage Examples
@@ -121,4 +124,12 @@ printf '\x12\x34aaaaaaaaaa\xFF' | ./target/release/anno u16:packet_id u32:timest
 # Floats and doubles
 python3 -c "import struct; print(struct.pack('fd', 3.14159, 2.71828), end='')" | \
   ./target/release/anno f32 f64
+
+# Skip bytes with .N syntax (N = bits)
+printf '\x12\x34\xAA\xBB\xCC\xDD\x56\x78' | ./target/release/anno u16:magic .32 u16:data
+# Skips bytes aa bb cc dd (4 bytes = 32 bits)
+
+# Complex pattern with skips
+printf '\x01\x02\x03\x04\x05\x06\x07\x08' | \
+  ./target/release/anno u8:version .8 u16:id .16 u16:checksum
 ```

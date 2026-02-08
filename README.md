@@ -5,10 +5,9 @@ A minimal hexdump utility that annotates binary data with decoded types and fiel
 ## Installation
 
 ```bash
-cargo build --release
+git clone 'https://github.com/glapa-grossklag/anno'
+cargo install --path anno
 ```
-
-Binary: `./target/release/anno`
 
 ## Examples
 
@@ -123,3 +122,7 @@ anno [types...] [-f <file>] [--byte-order <native|little|big>]
 ```
 
 Default byte order is native endianness (determined at compile time).
+
+## Disclaimer
+
+This was 100% vibe-coded over the course of an hour. Good luck.

@@ -15,7 +15,8 @@ fn test_field_name_single() {
     // For now we test via the internal function
     let type_specs = vec!["u16:apid".to_string()];
     let byte_order = main_module::ByteOrder::Little;
-    let annotations = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    let (annotations, error) = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    assert!(error.is_none());
 
     assert_eq!(annotations.len(), 1);
     assert_eq!(annotations[0].label, "apid: 4660");
@@ -36,7 +37,8 @@ fn test_field_name_mixed() {
         "u8:x".to_string(),
     ];
     let byte_order = main_module::ByteOrder::Little;
-    let annotations = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    let (annotations, error) = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    assert!(error.is_none());
 
     assert_eq!(annotations.len(), 3);
     assert_eq!(annotations[0].label, "apid: 4660");
@@ -59,7 +61,8 @@ fn test_field_name_all_named() {
         "u8:flags".to_string(),
     ];
     let byte_order = main_module::ByteOrder::Little;
-    let annotations = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    let (annotations, error) = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    assert!(error.is_none());
 
     assert_eq!(annotations.len(), 3);
     assert_eq!(annotations[0].label, "version: 1");
@@ -75,7 +78,8 @@ fn test_field_name_output() {
 
     let type_specs = vec!["u16:apid".to_string(), "u8:x".to_string()];
     let byte_order = main_module::ByteOrder::Little;
-    let annotations = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    let (annotations, error) = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    assert!(error.is_none());
 
     for annotation in annotations {
         hexdump.add_annotation(annotation);
@@ -121,7 +125,8 @@ fn test_field_name_with_underscores() {
     let data = vec![0x34, 0x12];
     let type_specs = vec!["u16:packet_id".to_string()];
     let byte_order = main_module::ByteOrder::Little;
-    let annotations = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    let (annotations, error) = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    assert!(error.is_none());
 
     assert_eq!(annotations.len(), 1);
     assert_eq!(annotations[0].label, "packet_id: 4660");
@@ -142,7 +147,8 @@ fn test_field_name_alignment() {
         "u8:x".to_string(),
     ];
     let byte_order = main_module::ByteOrder::Little;
-    let annotations = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    let (annotations, error) = main_module::build_annotations_from_types(&type_specs, byte_order, &data).unwrap();
+    assert!(error.is_none());
 
     let mut hexdump = Hexdump::new();
     for annotation in annotations {

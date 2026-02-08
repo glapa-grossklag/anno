@@ -5,6 +5,7 @@ use std::io::{self, IsTerminal};
 const GREEN: &str = "\x1b[32m";
 const BLUE: &str = "\x1b[34m";
 const PURPLE: &str = "\x1b[35m";
+const RED: &str = "\x1b[31m";
 const RESET: &str = "\x1b[0m";
 
 pub struct ColorScheme {
@@ -48,6 +49,23 @@ impl ColorScheme {
             // Fallback: just color it blue if format doesn't match
             format!("{}{}{}", BLUE, label, RESET)
         }
+    }
+
+    pub fn error(&self, text: &str) -> String {
+        if self.use_color {
+            format!("{}{}{}", RED, text, RESET)
+        } else {
+            text.to_string()
+        }
+    }
+
+    pub fn error_label(&self, label: &str) -> String {
+        if !self.use_color {
+            return label.to_string();
+        }
+
+        // Format is "type: error message" - color entire thing red
+        format!("{}{}{}", RED, label, RESET)
     }
 }
 

@@ -3,6 +3,13 @@ use std::io::{Read, Write};
 
 use super::color::ColorScheme;
 
+/// Annotation kind - determines color and rendering
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum AnnotationKind {
+    Normal,
+    Error,
+}
+
 /// Represents an annotation for a range of bytes
 #[derive(Debug, Clone)]
 pub struct Annotation {
@@ -12,6 +19,8 @@ pub struct Annotation {
     pub length: usize,
     /// Label for this annotation
     pub label: String,
+    /// Annotation kind (normal or error)
+    pub kind: AnnotationKind,
 }
 
 impl Annotation {
@@ -20,6 +29,16 @@ impl Annotation {
             offset,
             length,
             label: label.into(),
+            kind: AnnotationKind::Normal,
+        }
+    }
+
+    pub fn error(offset: usize, length: usize, label: impl Into<String>) -> Self {
+        Self {
+            offset,
+            length,
+            label: label.into(),
+            kind: AnnotationKind::Error,
         }
     }
 }
@@ -42,11 +61,14 @@ impl Hexdump {
         self.annotations.push(annotation);
     }
 
-    fn is_byte_annotated(&self, offset: usize) -> bool {
-        self.annotations.iter().any(|a| {
-            let ann_end = a.offset + a.length;
-            offset >= a.offset && offset < ann_end
-        })
+    fn get_byte_annotation_kind(&self, offset: usize) -> Option<AnnotationKind> {
+        self.annotations
+            .iter()
+            .find(|a| {
+                let ann_end = a.offset + a.length;
+                offset >= a.offset && offset < ann_end
+            })
+            .map(|a| a.kind)
     }
 
     pub fn dump<R: Read, W: Write>(&self, reader: &mut R, writer: &mut W) -> Result<()> {
@@ -67,10 +89,16 @@ impl Hexdump {
                 if i < bytes_read {
                     let byte_offset = offset + i;
                     let hex_str = format!("{:02x}", buffer[i]);
-                    if self.is_byte_annotated(byte_offset) {
-                        write!(writer, "{} ", self.colors.annotation(&hex_str))?;
-                    } else {
-                        write!(writer, "{} ", hex_str)?;
+                    match self.get_byte_annotation_kind(byte_offset) {
+                        Some(AnnotationKind::Normal) => {
+                            write!(writer, "{} ", self.colors.annotation(&hex_str))?;
+                        }
+                        Some(AnnotationKind::Error) => {
+                            write!(writer, "{} ", self.colors.error(&hex_str))?;
+                        }
+                        None => {
+                            write!(writer, "{} ", hex_str)?;
+                        }
                     }
                 } else {
                     write!(writer, "   ")?;
@@ -246,7 +274,11 @@ impl Hexdump {
 
         // Only show label on the first line of the annotation
         if ann_start >= line_offset && ann_start < line_end {
-            writeln!(writer, " {}", self.colors.label(&annotation.label))?;
+            let colored_label = match annotation.kind {
+                AnnotationKind::Normal => self.colors.label(&annotation.label),
+                AnnotationKind::Error => self.colors.error_label(&annotation.label),
+            };
+            writeln!(writer, " {}", colored_label)?;
         } else {
             writeln!(writer)?;
         }

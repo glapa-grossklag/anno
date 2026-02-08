@@ -75,8 +75,12 @@ Output:
 ### Byte order
 
 ```bash
-# Little-endian (default)
+# Native endianness (default)
 printf '\x12\x34\x56\x78' | anno u32
+# Output: u32: 2018915346 (on little-endian systems)
+
+# Explicit little-endian
+printf '\x12\x34\x56\x78' | anno u32 --byte-order little
 # Output: u32: 2018915346
 
 # Big-endian
@@ -97,5 +101,7 @@ anno u32:magic u32:version u64:timestamp -f data.bin
 ## Options
 
 ```
-anno [types...] [-f <file>] [--byte-order <little|big>]
+anno [types...] [-f <file>] [--byte-order <native|little|big>]
 ```
+
+Default byte order is native endianness (determined at compile time).

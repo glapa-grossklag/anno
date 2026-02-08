@@ -10,17 +10,25 @@ pub enum ByteOrder {
 impl ByteOrder {
     pub fn from_str(s: &str) -> Result<Self> {
         match s.to_lowercase().as_str() {
+            "native" => Ok(ByteOrder::default()),
             "little" | "le" => Ok(ByteOrder::Little),
             "big" | "be" => Ok(ByteOrder::Big),
-            _ => Err(anyhow!("Invalid byte order: {}. Use 'little' or 'big'", s)),
+            _ => Err(anyhow!("Invalid byte order: {}. Use 'native', 'little', or 'big'", s)),
         }
     }
 }
 
 impl Default for ByteOrder {
     fn default() -> Self {
-        // Default to little-endian (most common on modern systems)
-        ByteOrder::Little
+        // Default to native endianness
+        #[cfg(target_endian = "little")]
+        {
+            ByteOrder::Little
+        }
+        #[cfg(target_endian = "big")]
+        {
+            ByteOrder::Big
+        }
     }
 }
 

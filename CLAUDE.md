@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build & Test Commands
 
 ```bash
-# Build optimized release binary (size-optimized, ~339KB)
+# Build optimized release binary (size-optimized, ~393KB)
 cargo build --release
 
 # Run the binary
@@ -25,29 +25,33 @@ cargo test --test alignment_test
 
 ## Architecture
 
-### Core Components
+The codebase is organized into focused modules:
 
-**Hexdump struct** (`src/main.rs`): Main engine that processes input and renders output
-- Maintains a list of `Annotation` objects
-- Auto-detects color support (respects `NO_COLOR`, `TERM=dumb`, TTY detection)
-- Renders 16 bytes per line with 8+8 grouping
-
-**Annotation system**: Associates byte ranges with labels
-- `Annotation { offset, length, label }` - marks byte ranges
-- Annotations can span multiple lines
-- Renders with Unicode box-drawing: `└──────┘` under annotated bytes
-- All annotation labels align vertically at column 59 (character position, not byte position)
-- Label format: `"type: value"` e.g., `"u8: 42"` or `"f32: 3.141590"`
-
-**Type annotation system** (`src/types.rs` and `src/main.rs`): Automatic decoding of binary data
-- `DataType` enum: U8, U16, U32, U64, I8, I16, I32, I64, F32, F64
-- `ByteOrder` enum: Little (default) or Big
+**`src/main.rs`** (138 lines): CLI parsing and entry point
+- `Args` struct: Command-line argument parsing with argh
 - `TypeSpec` struct: Parses type specifications with optional field names (e.g., `u16:apid`)
 - `build_annotations_from_types()`: Sequential type decoding from command-line args
+- `main()`: Orchestrates reading input, building annotations, and rendering output
+
+**`src/display.rs`** (270 lines): Hexdump rendering engine
+- `Annotation` struct: Marks byte ranges with labels `{ offset, length, label }`
+- `Hexdump` struct: Main rendering engine
+  - Maintains list of annotations
+  - Renders 16 bytes per line with 8+8 grouping
+  - Handles multi-line annotations with continuation characters
+  - All annotation labels align vertically at column 59 (character position, not byte position)
+
+**`src/color.rs`** (75 lines): Color support and TTY detection
+- `ColorScheme` struct: Manages colored output
+- Auto-detects color support (respects `NO_COLOR`, `TERM=dumb`, TTY detection)
+- Methods: `addr()` (green), `annotation()` (blue), `label()` (purple type, blue value)
+
+**`src/types.rs`** (297 lines): Type system and decoding
+- `DataType` enum: U8, U16, U32, U64, I8, I16, I32, I64, F32, F64
+- `ByteOrder` enum: Native (default), Little, or Big
+  - Native uses compile-time detection via `cfg!(target_endian)`
+- `decode()`: Converts raw bytes to string representations
 - Field names: Use `type:fieldname` syntax to display custom names instead of type names
-- Examples:
-  - `anno u8 u32 f64 --byte-order little -f data.bin`
-  - `anno u16:packet_id u32:timestamp u8:version`
 
 ### Color Scheme
 - Addresses (left column): Green
@@ -81,7 +85,7 @@ The release profile is configured for minimal binary size:
 - `panic = "abort"` - smaller panic handler
 - `codegen-units = 1` - better optimization
 
-Binary size target: ~340KB
+Current binary size: 393KB (includes type system, field names, and full feature set)
 
 ## Test Coverage
 
@@ -110,8 +114,9 @@ printf '\x12\x34aaaaaaaaaa\xFF' | ./target/release/anno u16:packet_id u32:timest
 # Mix field names and plain types
 ./target/release/anno u16:apid u32 u32:data u8:x -f data.bin
 
-# Big-endian decoding
+# Explicit byte order (default is native endianness)
 ./target/release/anno u32 u64 --byte-order big -f data.bin
+./target/release/anno u32 u64 --byte-order little -f data.bin
 
 # Floats and doubles
 python3 -c "import struct; print(struct.pack('fd', 3.14159, 2.71828), end='')" | \

@@ -15,13 +15,13 @@ Binary: `./target/release/anno`
 ### Basic hexdump
 
 ```bash
-echo "Hello, World!" | anno
+echo "Hello, World" | anno
 ```
 
 Output:
 ```
-00000000  48 65 6c 6c 6f 2c 20 57  6f 72 6c 64 21 0a
-0000000e
+00000000  48 65 6c 6c 6f 2c 20 57  6f 72 6c 64 0a
+0000000d
 ```
 
 ### Decode types
@@ -42,17 +42,17 @@ Output:
 ### Use field names
 
 ```bash
-printf '\x01\x00\x64\x00\x00\x00\xFF' | anno u8:version u16:id u32:count i8:delta
+printf '\x01\x64\x00\x64\x00\x00\x00\xFF' | anno u8:version u16:id u32:count i8:delta
 ```
 
 Output:
 ```
-00000000  01 00 64 00 00 00 ff
+00000000  01 64 00 64 00 00 00 ff
          └──┘                                              version: 1
             └─────┘                                        id: 100
-                  └────────────┘                           count: 100
-                                 └──┘                      delta: -1
-00000007
+                  └───────────┘                            count: 100
+                              └──┘                         delta: -1
+00000008
 ```
 
 ### Skip bytes
@@ -76,17 +76,17 @@ Common skip sizes: `.8` (1 byte), `.16` (2 bytes), `.32` (4 bytes), `.64` (8 byt
 ### Network packet
 
 ```bash
-printf '\x12\x34\x00\x01\x00\x00\x00\x64\x00\x00\x00\xC8' | \
+printf '\x12\x34\x00\x01\x64\x00\x00\x00\xC8\x00\x00\x00' | \
   anno u16:packet_id u16:version u32:timestamp u32:sequence
 ```
 
 Output:
 ```
-00000000  12 34 00 01 00 00 00 64  00 00 00 c8
+00000000  12 34 00 01 64 00 00 00  c8 00 00 00
          └─────┘                                           packet_id: 13330
                └─────┘                                     version: 256
                      └────────────┘                        timestamp: 100
-                                  └────────────┘           sequence: 200
+                                  └───────────┘            sequence: 200
 0000000c
 ```
 
